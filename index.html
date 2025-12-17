@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Mario</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: radial-gradient(circle at 50% 20%, #1d2b64 0%, #0f0f18 60%, #07070d 100%);
+            overflow: hidden;
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+        canvas {
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 14px;
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
+            image-rendering: pixelated;
+            background: #6b8cff;
+        }
+        .shell {
+            position: relative;
+            width: min(960px, calc(100vw - 24px));
+            aspect-ratio: 16 / 9;
+            display: grid;
+            place-items: center;
+        }
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+        }
+        .hud {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+        .hud-top {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            right: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .pill {
+            pointer-events: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 999px;
+            color: rgba(255, 255, 255, 0.92);
+            background: rgba(10, 12, 18, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+            font-weight: 650;
+            letter-spacing: 0.2px;
+        }
+        .btn {
+            pointer-events: auto;
+            cursor: pointer;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.94);
+            font-weight: 700;
+            transition: transform 120ms ease, background 120ms ease;
+            user-select: none;
+        }
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .modal {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: radial-gradient(circle at 50% 20%, rgba(15, 20, 40, 0.7) 0%, rgba(0, 0, 0, 0.7) 65%, rgba(0, 0, 0, 0.85) 100%);
+            pointer-events: auto;
+        }
+        .modal[aria-hidden="false"] {
+            display: flex;
+        }
+        .card {
+            width: min(520px, 100%);
+            padding: 18px 18px 16px;
+            border-radius: 18px;
+            background: rgba(10, 12, 18, 0.68);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
+            color: rgba(255, 255, 255, 0.92);
+        }
+        .title {
+            font-size: 22px;
+            font-weight: 850;
+            letter-spacing: 0.3px;
+            margin: 0 0 8px;
+        }
+        .sub {
+            margin: 0 0 14px;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.75);
+            font-weight: 560;
+        }
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .kbd {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.08);
+            font-weight: 800;
+            font-size: 12px;
+        }
+        .touch {
+            position: absolute;
+            left: 14px;
+            right: 14px;
+            bottom: 14px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .touch .btn {
+            pointer-events: auto;
+            text-align: center;
+            padding: 14px 10px;
+            border-radius: 16px;
+            background: rgba(10, 12, 18, 0.35);
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .touch {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <canvas id="gameCanvas" width="960" height="540"></canvas>
+        <div class="hud">
+            <div class="hud-top">
+                <div class="pill" id="hudLeft">Score: <span id="hudScore">0</span> · Coins: <span id="hudCoins">0</span> · Lives: <span id="hudLives">3</span></div>
+                <div class="row">
+                    <button class="btn" id="btnPause" type="button">Pause</button>
+                    <button class="btn" id="btnSound" type="button">Sound: On</button>
+                    <button class="btn" id="btnRestart" type="button">Restart</button>
+                </div>
+            </div>
+            <div class="touch">
+                <button class="btn" id="touchLeft" type="button">Left</button>
+                <button class="btn" id="touchJump" type="button">Jump</button>
+                <button class="btn" id="touchRight" type="button">Right</button>
+            </div>
+            <div class="modal" id="modal" aria-hidden="false">
+                <div class="card">
+                    <p class="title" id="modalTitle">Super Mario Mini</p>
+                    <p class="sub" id="modalText">Collect coins, stomp enemies, reach the flag.</p>
+                    <div class="row" style="margin-bottom: 12px;">
+                        <span class="kbd">←</span>
+                        <span class="kbd">→</span>
+                        <span class="kbd">Space</span>
+                        <span class="kbd">P</span>
+                    </div>
+                    <div class="row">
+                        <button class="btn" id="btnStart" type="button">Start</button>
+                        <button class="btn" id="btnResume" type="button" style="display:none;">Resume</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
